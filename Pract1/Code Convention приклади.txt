@@ -1,0 +1,83 @@
+1. Стильові рекомендації:
+       public class Example {
+           public static void main(String[] args) {
+               if (args.length > 0) {
+                   System.out.println("Arguments: " + args[0]);
+               }
+           }
+       }
+
+2. Правила найменування змінних, функцій та класів:
+       public class Car {
+           private String carModel;
+           
+           public String getCarModel() {
+               return carModel;
+           }
+       }
+
+3. Структура коду:
+       // Car.java
+       public class Car {
+           private String model;
+           public void start() {
+               System.out.println(model + " is starting");
+           }
+       }
+
+4. Принципи рефакторингу:
+       public class Car {
+           private String model;
+           
+           public void start() {
+               System.out.println(model + " is starting");
+           }
+       }
+
+5. Оптимізація продуктивності:
+       List<String> list = new ArrayList<>();
+       list.add("Example");
+
+6. Обробка помилок:
+       try {
+           int result = 10 / 0;
+       } catch (ArithmeticException e) {
+           System.out.println("Division by zero is not allowed.");
+       }
+
+7. Дотримання парадигм програмування:
+       public class Animal {
+           public void makeSound() {
+               System.out.println("Some sound");
+           }
+       }
+       
+       public class Dog extends Animal {
+           @Override
+           public void makeSound() {
+               System.out.println("Woof");
+           }
+       }
+
+8. Тестування та документування коду:
+Приклад JUnit:
+import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+
+public class CalculatorTest {
+    @Test
+    public void testAdd() {
+        Calculator calculator = new Calculator();
+        assertEquals(5, calculator.add(2, 3));
+    }
+}
+Приклад Javadoc:
+       /**
+        * Calculates the sum of two numbers.
+        * @param a first number
+        * @param b second number
+        * @return sum of a and b
+        */
+       public int add(int a, int b) {
+           return a + b;
+       }

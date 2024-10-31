@@ -1,0 +1,234 @@
+//Метод Replace Temp with Query. Код до рефакторингу:
+//public class Order
+//{
+//    private decimal basePrice;
+//    private decimal discountRate;
+//    private int quantity;
+
+//    public Order(decimal basePrice, decimal discountRate, int quantity)
+//    {
+//        this.basePrice = basePrice;
+//        this.discountRate = discountRate;
+//        this.quantity = quantity;
+//    }
+
+//    public decimal CalculateTotalPrice()
+//    {
+//        decimal baseTotal = basePrice * quantity;
+//        decimal discount = 0;
+
+//        if (quantity > 100)
+//        {
+//            discount = baseTotal * discountRate;
+//        }
+
+//        return baseTotal - discount;
+//    }
+//}
+
+//Код після рефакторингу:
+//public class Order
+//{
+//    private decimal basePrice;
+//    private decimal discountRate;
+//    private int quantity;
+
+//    public Order(decimal basePrice, decimal discountRate, int quantity)
+//    {
+//        this.basePrice = basePrice;
+//        this.discountRate = discountRate;
+//        this.quantity = quantity;
+//    }
+
+//    private decimal GetBaseTotal()
+//    {
+//        return basePrice * quantity;
+//    }
+
+//    private decimal GetDiscount()
+//    {
+//        return quantity > 100 ? GetBaseTotal() * discountRate : 0;
+//    }
+
+//    public decimal CalculateTotalPrice()
+//    {
+//        return GetBaseTotal() - GetDiscount();
+//    }
+//}
+
+
+//Код до рефакторингу: 
+//public class Invoice
+//{
+//    private decimal amount;
+//    private decimal taxRate;
+
+//    public Invoice(decimal amount, decimal taxRate)
+//    {
+//        this.amount = amount;
+//        this.taxRate = taxRate;
+//    }
+
+//    public decimal CalculateTotal()
+//    {
+//        decimal salesTax = amount * taxRate;
+//        return amount + salesTax;
+//    }
+//}
+
+
+//Метод Consolidate Conditional Expression . Код до рефакторингу:
+
+//public class Order
+//{
+//    private decimal orderValue;
+//    private bool isPriorityCustomer;
+//    private int customerYears;
+
+//    public Order(decimal orderValue, bool isPriorityCustomer, int customerYears)
+//    {
+//        this.orderValue = orderValue;
+//        this.isPriorityCustomer = isPriorityCustomer;
+//        this.customerYears = customerYears;
+//    }
+
+//    public decimal CalculateDiscount()
+//    {
+//        decimal discount = 0;
+
+//        if (orderValue > 1000)
+//        {
+//            discount = 0.05m;
+//        }
+
+//        if (isPriorityCustomer)
+//        {
+//            discount = 0.05m;
+//        }
+
+//        if (customerYears > 5)
+//        {
+//            discount = 0.05m;
+//        }
+
+//        return orderValue * (1 - discount);
+//    }
+//}
+
+//Код після рефакторингу: 
+
+//public class Order
+//{
+//    private decimal orderValue;
+//    private bool isPriorityCustomer;
+//    private int customerYears;
+
+//    public Order(decimal orderValue, bool isPriorityCustomer, int customerYears)
+//    {
+//        this.orderValue = orderValue;
+//        this.isPriorityCustomer = isPriorityCustomer;
+//        this.customerYears = customerYears;
+//    }
+
+//    public decimal CalculateDiscount()
+//    {
+//        decimal discount = (orderValue > 1000 || isPriorityCustomer || customerYears > 5) ? 0.05m : 0;
+//        return orderValue * (1 - discount);
+//    }
+//}
+
+
+//Метод Encapsulate Collection . Код до рефакторингу:
+//using System;
+//using System.Collections.Generic;
+
+//public class ShoppingCart
+//{
+//    public List<string> Items { get; private set; }
+
+//    public ShoppingCart()
+//    {
+//        Items = new List<string>();
+//    }
+
+//    public void AddItem(string item)
+//    {
+//        Items.Add(item);
+//    }
+
+//    public void RemoveItem(string item)
+//    {
+//        Items.Remove(item);
+//    }
+
+//    public void PrintItems()
+//    {
+//        foreach (var item in Items)
+//        {
+//            Console.WriteLine(item);
+//        }
+//    }
+//}
+
+//Код після рефакторингу:
+
+//using System;
+//using System.Collections.Generic;
+
+//public class ShoppingCart
+//{
+//    private List<string> items;  // Змінена видимість колекції на приватну
+
+//    public ShoppingCart()
+//    {
+//        items = new List<string>();
+//    }
+
+//    public void AddItem(string item)
+//    {
+//        if (string.IsNullOrEmpty(item))
+//        {
+//            Console.WriteLine("Item cannot be null or empty.");
+//            return;
+//        }
+//        items.Add(item);
+//    }
+
+//    public void RemoveItem(string item)
+//    {
+//        if (items.Remove(item))
+//        {
+//            Console.WriteLine($"{item} was removed from the cart.");
+//        }
+//        else
+//        {
+//            Console.WriteLine($"{item} not found in the cart.");
+//        }
+//    }
+
+//    public void PrintItems()
+//    {
+//        if (items.Count == 0)
+//        {
+//            Console.WriteLine("The cart is empty.");
+//            return;
+//        }
+
+//        Console.WriteLine("Items in the cart:");
+//        foreach (var item in items)
+//        {
+//            Console.WriteLine(item);
+//        }
+//    }
+
+//    public bool ContainsItem(string item)
+//    {
+//        return items.Contains(item);
+//    }
+
+//    public int GetItemCount()
+//    {
+//        return items.Count;
+//    }
+//}
+

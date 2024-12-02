@@ -1,0 +1,786 @@
+﻿МІНІСТЕРСТВО ОСВІТИ І НАУКИ УКРАЇНИ
+ ХАРКІВСЬКИЙ НАЦІОНАЛЬНИЙ УНІВЕРСИТЕТ РАДІОЕЛЕКТРОНІКИ
+ 
+
+
+Кафедра «Програмна інженерія»
+ 
+
+
+
+ЗВІТ
+з лабораторної роботи №2
+з дисципліни «Аналіз та рефакторинг коду»
+на тему «РОЗРОБКА БАЗИ ДАНИХ ДЛЯ СЕРВЕРНОЇ ЧАСТИНИ ПРОГРАМНОЇ СИСТЕМИ ТА ПРИКЛАДНОГО ПРОГРАМНОГО ІНТЕРФЕЙСУ (API).»
+ 
+
+
+
+ 
+Виконала:                                                           	              	Прийняв:
+ст. гр. ПЗПІ-22-7                                    	       	     		Сокорчук І.П.
+Кравченко В. А.
+
+
+
+
+
+Харків 2024
+     В ході лабораторної роботи буде розроблено: база даних для серверної частини програмної системи для контролю споживання води у приміщенні та прикладного програмного інтерфейсу(API).
+     Будова програмної системи AquaTrack:
+     1. Фронтенд (WinForms):
+Мова програмування: C#.
+Інструмент розробки: Microsoft Visual Studio.
+Функціонал:
+     • Графічний інтерфейс для перегляду поточного споживання води.
+     • Таблиці для відображення історії використання води.
+     • Форми для встановлення лімітів.
+     • Адміністративні інструменти: додавання/видалення IoT-пристроїв, управління користувачами.
+     • Двомовна локалізація інтерфейсу (українська та англійська мови).
+     2. Серверна частина (Back-end)
+     Технології: C#, .NET Framework. ASP.NET для створення REST API.
+     Функціонал: API для отримання та запису даних із бази даних. Валідація даних і бізнес-логіка для роботи з користувачами, лімітами та пристроями. Обробка запитів від WinForms-додатка.
+     3. База даних (SQL Server)
+Інструмент: Microsoft SQL Server Management Studio 19.
+Таблиці:
+     • User: зберігає інформацію про користувачів системи.
+     • IoT Device: зберігає інформацію про IoT-пристрої.
+     • WaterUsage: записує дані про споживання води.
+     • Limit: містить інформацію про ліміти, встановлені користувачами.
+Зв’язки:
+     • User → Limit (1:Б).
+     • IoT Device → WaterUsage (1:Б).
+     • IoT Device → Limit (1:Б).
+     4. IoT застосунок
+     Функціонал:
+     Збір даних із сенсорів і передача їх на сервер через REST API. Відправлення сповіщень про перевищення лімітів. Протоколи передачі даних: HTTP або MQTT.
+     5. API
+     Тип: REST API. Маршрути:
+     /api/water-usage:
+     GET /current — отримання поточних показників.
+     GET /history — отримання історії використання води.
+     /api/limits:
+     POST /create — створення нового ліміту.
+     PUT /update/{limit_id} — оновлення ліміту.
+     DELETE /delete/{limit_id} — видалення ліміту.
+     /api/iot-devices:
+     GET /list — список пристроїв.
+     POST /register — реєстрація нового пристрою.
+     DELETE /delete/{device _id} — видалення ліміту.
+     /api/users:
+     POST /register — реєстрація нового користувача.
+     POST /login — авторизація.
+     PUT /update-profile — оновлення профілю.
+     GET /list — отримати список користувачів (тільки адміністратор).
+     Мова розробки: C#, ASP.NET Core.
+     6. Модуль безпеки
+Захист даних:
+• Хешування паролів (наприклад, через BCrypt).
+• Шифрування конфіденційних даних.
+Ролі доступу:
+• Адміністратор — управління користувачами та системними налаштуваннями.
+• Користувач — перегляд даних і встановлення лімітів.
+Валідація:
+• На рівні API — перевірка коректності даних, переданих із WinForms-додатку.
+
+     Створимо UML діаграму прецедентів для серверної частини системи (рис.1). 
+     Визначення основних акторів системи:
+     Актори — це об'єкти або особи, які взаємодіють із системою. У нашому випадку:
+Користувач:
+     • Стандартний користувач системи.
+     • Має доступ до інформації про споживання води, історії, встановлення лімітів тощо.
+Адміністратор:
+     • Керує користувачами та їх правами доступу.
+     • Здійснює адміністрування даних, резервне копіювання.
+IoT-пристрій:
+     • Надсилає дані про споживання води до серверної частини.
+     Визначення прецедентів (Use Cases):
+     Прецеденти відповідають функціоналу системи. Основні сценарії взаємодії:
+Для користувача:
+     • Авторизація та аутентифікація.
+     • Перегляд актуальних показників водоспоживання.
+     • Перегляд історії споживання води.
+     • Встановлення/редагування лімітів.
+Для адміністратора:
+     • Управління користувачами (додавання, блокування, видалення).
+     • Управління даними системи (перегляд і налаштування параметрів).
+     • Підтримка мов та різних форматів дат.
+     • Виконання резервного копіювання та відновлення даних.
+Для IoT-пристрою:
+     • Надсилання даних про споживання води.
+
+
+   Рисунок 1 - UML діаграма прецедентів для серверної частини системи.
+   
+     Щоб створити ER-діаграму (рис.2) для системи «AquaTrack», потрібно визначити основні сутності, їх атрибути та взаємозв'язки. 
+     Сутності:
+     1.User (Користувач):
+     Атрибути:
+• user_id (PK) — унікальний ідентифікатор користувача.
+• username — ім'я користувача.
+• email — електронна пошта.
+• password_hash — захищений хеш пароля.
+• role — роль (користувач, адміністратор).
+     2.WaterUsage (Споживання води):
+     Атрибути:
+• usage_id (PK) — унікальний ідентифікатор запису.
+• device_id (FK) — зовнішній ключ, зв'язок із IoT-пристроєм.
+• usage_value — кількість спожитої води (у літрах або іншій одиниці).
+• timestamp — дата та час вимірювання.
+     3.IoT Device (IoT-пристрій):
+     Атрибути:
+• device_id (PK) — унікальний ідентифікатор пристрою.
+• device_type — тип пристрою (наприклад, водомір, датчик витрати).
+• status — статус пристрою (активний/неактивний).
+• limit_id(FK)
+     4.Limit (Ліміт на споживання):
+     Атрибути:
+• limit_id (PK) — унікальний ідентифікатор ліміту.
+• limit_value — максимальне значення споживання води.
+• start_date — дата початку дії ліміту.
+• end_date — дата закінчення дії ліміту.
+• user_id(FK)
+     
+     Взаємозв’язки між сутностями:
+     1.IoT Device (IoT-пристрій) — WaterUsage (Споживання води):
+     Тип зв’язку: один до багатьох (1:Б)
+     Опис: один IoT-пристрій може передавати багато записів про споживання води.
+     2.User (Користувач) — Limit (Ліміт на споживання):
+     Тип зв’язку: один до багатьох (1:Б)
+     Опис: один користувач може встановити кілька лімітів на різний період часу.
+     3. IoT Device (IoT-пристрій) —  Limit (Ліміт на споживання):
+     Тип зв’язку: один до багатьох (1:Б).
+     Опис: багато лімітів може бути прив’язано до одного пристрою(один ліміт на один період часу, інший – на інший період).
+     
+
+Рисунок 2 – ER діаграма даних.
+     
+     Розробимо базу даних програмної системи в MS SQL Server. Створюємо таблиці відповідно до ER діаграми на мові SQL(див. додаток).
+     1. Таблиця Users:
+     • Зберігає інформацію про користувачів.
+     • Унікальний user_id для ідентифікації.
+     • Поле role дозволяє визначати доступ користувача до функцій системи.
+     2. Таблиця IoT_Device:
+     • Кожен пристрій має унікальний device_id.
+     • Поле status вказує, чи пристрій активний.
+     3. Таблиця Limits:
+     • Пов’язана із таблицями Users та IoT_Device.
+     • Поле user_id вказує, хто встановив ліміт.
+     • Поле device_id вказує, до якого пристрою прив’язаний ліміт.
+     • Один пристрій може мати багато лімітів на різні періоди часу.
+     4. Таблиця WaterUsage:
+     • Зберігає записи про споживання води для пристроїв.
+     • Поле device_id забезпечує зв’язок із конкретним пристроєм.
+     Взаємозв’язки
+     1. IoT_Device → WaterUsage (1:Б): один пристрій може передавати багато записів про споживання води.
+     2. Users → Limits (1:Б): один користувач може встановити кілька лімітів.
+     3. IoT_Device → Limits (1:Б): один пристрій може мати кілька лімітів, застосованих на різні періоди часу.
+
+     Створимо діаграму структури бази даних у MS SQL Server (рис.3).
+     
+
+Рисунок 3 – діаграма структури бази даних.
+     
+     Створимо функції роботи з базою даних у WinForms із використанням Entity Framework як ORM. Працюємо в C# у середовищі Microsoft Visual Studio, і база даних вже створена. Додамо бібліотеку Entity Framework через NuGet Package Manager.
+     Далі додаємо рядок підключення у файл App.config:
+	<connectionStrings>
+		<add name="DefaultConnection"
+			 connectionString="Server=DESKTOP-7G3I2IS;Database=aquatrack;Trusted_Connection=True;"
+			 providerName="System.Data.SqlClient" />
+	</connectionStrings>
+     
+     Створюємо моделі для таблиць: у папці Data створимо папку Models та для кожної таблиці клас:
+     Модель для таблиці Users:
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace AquaTrack.Data.Models
+{
+    public class User
+    {
+        public int UserId { get; set; }
+        public string Username { get; set; }
+        public string Email { get; set; }
+        public string PasswordHash { get; set; }
+        public string Role { get; set; }
+    }
+}
+     
+     Аналогічно для інших таблиць.
+     Створимо репозиторії для CRUD-функцій: створюємо папку Repositories та базовий інтерфейс IRepository.cs:
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace AquaTrack.Repositories
+{
+    public interface IRepository<T> where T : class
+    {
+        IEnumerable<T> GetAll();
+        T GetById(int id);
+        void Add(T entity);
+        void Update(T entity);
+        void Delete(int id);
+    }
+}
+     
+     Створимо клас для роботи з користувачами UserRepository.cs та аналогічно створимо репозиторії для інших таблиць (див. додаток).
+     
+     Опис інженерних рішень:
+     Серверна частина: ASP.NET Web API використовується як основний інструмент для створення RESTful API, який забезпечує зв’язок між клієнтською частиною (веб-інтерфейсом або додатками) і серверною логікою. Ця технологія обрана завдяки її гнучкості, легкості налаштування та інтеграції з іншими компонентами .NET.
+     Переваги вибору:
+     • Зручна робота з HTTP-запитами (GET, POST, PUT, DELETE).
+     • Підтримка атрибутного маршрутизації для організації чіткої структури API.
+     • Інтеграція зі сторонніми бібліотеками, як-от Swagger для документування API.
+     База даних: SQL Server з використанням ORM Entity Framework
+SQL Server обрано як СУБД для зберігання даних через його продуктивність, надійність і можливість роботи з великими обсягами інформації.
+     Entity Framework (EF) використовується як ORM (Object-Relational Mapping) для зручної роботи з базою даних. EF забезпечує:
+     • Можливість використовувати LINQ-запити для взаємодії з даними.
+     • Автоматичну генерацію SQL-запитів.
+     • Полегшену підтримку змін у схемі бази даних через міграції.
+     Інтеграція DI-контейнера: Unity впроваджено для реалізації принципу інверсії залежностей (Dependency Injection, DI). Це дозволяє знизити зв’язність між компонентами системи, спрощує тестування та підтримку.
+     Особливості:
+     • Усі залежності між компонентами (наприклад, сервіси та репозиторії) реєструються в контейнері Unity.
+     • Контролери автоматично отримують необхідні сервіси через конструктор завдяки впровадженню залежностей.
+     • Застосовано HierarchicalLifetimeManager для управління життєвим циклом об'єктів і запобігання витокам пам’яті.
+     Сервісний шар:
+     Шар сервісів впроваджений для відокремлення бізнес-логіки від контролерів. Це покращує структуру коду, забезпечуючи:
+     • Чіткий розподіл відповідальності між компонентами.
+     • Легкість у тестуванні бізнес-логіки (сервіси можна тестувати окремо).
+     Сервіси, реалізовані в проекті:
+     UserService: реалізує функції реєстрації, авторизації, оновлення профілю користувачів та інші дії, пов’язані з користувачами.
+     IoTDeviceService: здійснює управління IoT-пристроями (реєстрація, отримання статусу, оновлення даних).
+     LimitService: відповідає за встановлення та контроль лімітів споживання води.
+     WaterUsageService: забезпечує функціонал моніторингу споживання води.
+     Кожен сервіс взаємодіє з відповідним репозиторієм, який виконує запити до бази даних.
+     Репозиторії є посередниками між базою даних і сервісним шаром. Вони інкапсулюють логіку доступу до даних, що дозволяє: зменшити дублювання коду та легко змінювати логіку взаємодії з базою даних.
+     Для кожної сутності створено окремий репозиторій, який реалізує базові операції:
+     • GetAll: отримання всіх записів із таблиці.
+     • GetById: пошук запису за ідентифікатором.
+     • Add: додавання нового запису.
+     • Update: оновлення існуючого запису.
+     • Delete: видалення запису за ідентифікатором.
+     Наприклад, UserRepository працює з таблицею Users у базі даних і забезпечує всі основні CRUD-операції для цієї сутності.
+     Контролери відповідають за взаємодію серверної частини з клієнтами через API. Раніше вони напряму працювали з контекстом бази даних, що створювало складності в масштабуванні та тестуванні.
+     Тепер контролери використовують сервіси для обробки запитів. Логіка контролерів спрощена, оскільки вся бізнес-логіка перенесена в сервіси. Контролери працюють лише як точка входу для HTTP-запитів.
+     Приклад контролера:
+     UsersController приймає запити на реєстрацію, авторизацію, оновлення профілю тощо. Кожен запит передається до відповідного методу UserService, який виконує бізнес-логіку.
+     Ці інженерні рішення забезпечують гнучкість, масштабованість і легкість підтримки серверної частини системи AquaTrack.
+     Специфікація API за допомогою Swagger. Щоб тестувати API маршрути за допомогою Swagger в проекті, потрібно налаштувати його для ASP.NET додатку. Swagger дає автоматично згенеровану документацію для API, а також можливість тестувати ці маршрути безпосередньо через веб-інтерфейс.
+     Кроки для налаштування Swagger:
+     1. Встановлення Swagger в проект:
+     Для того, щоб додати Swagger, потрібно спочатку встановити необхідні NuGet пакети: Install-Package Swashbuckle.Core. Це основний пакет для інтеграції Swagger з ASP.NET Web API.
+     2. Налаштування Swagger в Startup.cs
+     Після встановлення пакету потрібно налаштувати Swagger. Для цього відредагуємо файл Startup.cs. Додамо простір імен для Swagger в самому верху файлу: using Swashbuckle.Application; 
+     Додамо Swagger в метод Configuration:
+     
+// Налаштування Swagger
+config.EnableSwagger(c =>
+{
+    	c.SingleApiVersion("v1", "AquaTrack API");
+}).EnableSwaggerUi();  // Додаємо Swagger UI
+     
+     Це налаштує Swagger і створить веб-інтерфейс для тестування вашого API.
+     3. Тестування маршрутів
+     На сторінці Swagger UI побачимо всі доступні API маршрути, які описали в контролерах (рис.4, рис.5).
+
+Рисунок 4 – документація для API Swagger.
+     
+
+Рисунок 5 – розгорнута документація для API Swagger.
+     
+     Тепер доступна інтерактивна документація для API, яку можна тестувати через Swagger UI. Це дуже зручний спосіб перевіряти маршрути, тестувати відповіді сервера та виявляти помилки на ранніх етапах.
+     Фрагменти програмного коду включають ключові частини коду, які ілюструють основні аспекти системи.
+     1. Логіка взаємодії серверної частини з БД:
+     Код із репозиторіїв, які реалізують доступ до бази даних через Entity Framework. 
+     Репозиторії(див. додаток): IRepository.cs, UserRepository.cs, IoTDeviceRepository.cs, WaterUsageRepository.cs, LimitRepository.cs.
+     2. Логіка взаємодії серверної частини з клієнтами:
+     Код із контролерів, які обробляють запити від клієнтів і передають їх у сервіси. 
+     Контролери(див. додаток): UsersController.cs, IoTDevicesController.cs, WaterUsageController.cs, LimitsController.cs.
+     
+     Посилання на відеозапис: https://youtu.be/jBT5unVUE6g
+
+
+ДОДАТОК
+Код для створення таблиць у базі даних
+USE aquatrack;
+
+-- Таблиця користувачів
+CREATE TABLE Users (
+    user_id INT IDENTITY(1,1) PRIMARY KEY, -- Унікальний ідентифікатор користувача
+    username VARCHAR(50) NOT NULL,          -- Ім'я користувача
+    email VARCHAR(100) UNIQUE NOT NULL,     -- Електронна пошта
+    password_hash VARCHAR(255) NOT NULL,    -- Хеш пароля
+    role NVARCHAR(10) CHECK (role IN ('user', 'admin')) NOT NULL -- Роль (користувач/адміністратор)
+);
+
+-- Таблиця IoT пристроїв
+CREATE TABLE IoT_Device (
+    device_id INT IDENTITY(1,1) PRIMARY KEY, -- Унікальний ідентифікатор пристрою
+    device_type NVARCHAR(50) NOT NULL,       -- Тип пристрою (водомір, датчик витрати)
+    status NVARCHAR(10) CHECK (status IN ('active', 'inactive')) NOT NULL DEFAULT 'active' -- Статус пристрою
+);
+
+-- Таблиця лімітів на споживання
+CREATE TABLE Limits (
+    limit_id INT IDENTITY(1,1) PRIMARY KEY, -- Унікальний ідентифікатор ліміту
+    limit_value DECIMAL(10, 2) NOT NULL,     -- Максимальне значення споживання води
+    start_date DATE NOT NULL,                -- Дата початку дії ліміту
+    end_date DATE NOT NULL,                  -- Дата закінчення дії ліміту
+    user_id INT NOT NULL,                    -- Зовнішній ключ до користувача
+    device_id INT NOT NULL,                  -- Зовнішній ключ до IoT-пристрою
+    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (device_id) REFERENCES IoT_Device(device_id) ON DELETE CASCADE
+);
+
+-- Таблиця споживання води
+CREATE TABLE Water_Usage (
+    usage_id INT IDENTITY(1,1) PRIMARY KEY, -- Унікальний ідентифікатор запису
+    device_id INT NOT NULL,                  -- Зовнішній ключ до IoT-пристрою
+    usage_value DECIMAL(10, 2) NOT NULL,     -- Кількість спожитої води
+    timestamp DATETIME NOT NULL,             -- Дата та час вимірювання
+    FOREIGN KEY (device_id) REFERENCES IoT_Device(device_id) ON DELETE CASCADE
+);
+
+
+Репозиторії
+      IRepository.cs:
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace AquaTrack.Repositories
+{
+    public interface IRepository<T> where T : class
+    {
+        IEnumerable<T> GetAll();
+        T GetById(int id);
+        void Add(T entity);
+        void Update(T entity);
+        void Delete(int id);
+    }
+}
+     
+     UserRepository.cs:
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using AquaTrack.Data;
+using AquaTrack.Data.Models;
+
+namespace AquaTrack.Repositories
+{
+    public class UserRepository : IRepository<User>
+    {
+        private readonly AppDbContext _context;
+
+        public UserRepository(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        public IEnumerable<User> GetAll()
+        {
+            return _context.Users.ToList();
+        }
+
+        public User GetById(int id)
+        {
+            return _context.Users.Find(id);
+        }
+
+        public void Add(User entity)
+        {
+            _context.Users.Add(entity);
+            _context.SaveChanges();
+        }
+
+        public void Update(User entity)
+        {
+            _context.Entry(entity).State = System.Data.Entity.EntityState.Modified;
+            _context.SaveChanges();
+        }
+
+        public void Delete(int id)
+        {
+            var user = _context.Users.Find(id);
+            if (user != null)
+            {
+                _context.Users.Remove(user);
+                _context.SaveChanges();
+            }
+        }
+    }
+}
+     
+     IoTDeviceRepository.cs:
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using AquaTrack.Data;
+using AquaTrack.Data.Models;
+
+namespace AquaTrack.Repositories
+{
+    public class IoTDeviceRepository : IRepository<IoTDevice>
+    {
+        private readonly AppDbContext _context;
+
+        public IoTDeviceRepository(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        public IEnumerable<IoTDevice> GetAll()
+        {
+            return _context.IoTDevices.ToList();
+        }
+
+        public IoTDevice GetById(int id)
+        {
+            return _context.IoTDevices.Find(id);
+        }
+
+        public void Add(IoTDevice entity)
+        {
+            _context.IoTDevices.Add(entity);
+            _context.SaveChanges();
+        }
+
+        public void Update(IoTDevice entity)
+        {
+            _context.Entry(entity).State = System.Data.Entity.EntityState.Modified;
+            _context.SaveChanges();
+        }
+
+        public void Delete(int id)
+        {
+            var device = _context.IoTDevices.Find(id);
+            if (device != null)
+            {
+                _context.IoTDevices.Remove(device);
+                _context.SaveChanges();
+            }
+        }
+    }
+}
+     
+     WaterUsageRepository.cs:
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using AquaTrack.Data;
+using AquaTrack.Data.Models;
+
+namespace AquaTrack.Repositories
+{
+    public class WaterUsageRepository : IRepository<WaterUsage>
+    {
+        private readonly AppDbContext _context;
+
+        public WaterUsageRepository(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        public IEnumerable<WaterUsage> GetAll()
+        {
+            return _context.WaterUsages.ToList();
+        }
+
+        public WaterUsage GetById(int id)
+        {
+            return _context.WaterUsages.Find(id);
+        }
+
+        public void Add(WaterUsage entity)
+        {
+            _context.WaterUsages.Add(entity);
+            _context.SaveChanges();
+        }
+
+        public void Update(WaterUsage entity)
+        {
+            _context.Entry(entity).State = System.Data.Entity.EntityState.Modified;
+            _context.SaveChanges();
+        }
+
+        public void Delete(int id)
+        {
+            var usage = _context.WaterUsages.Find(id);
+            if (usage != null)
+            {
+                _context.WaterUsages.Remove(usage);
+                _context.SaveChanges();
+            }
+        }
+    }
+}
+     
+     LimitRepository.cs:
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using AquaTrack.Data;
+using AquaTrack.Data.Models;
+
+namespace AquaTrack.Repositories
+{
+    public class LimitRepository : IRepository<Limit>
+    {
+        private readonly AppDbContext _context;
+
+        public LimitRepository(AppDbContext context)
+        {
+            _context = context;
+        }
+
+        public IEnumerable<Limit> GetAll()
+        {
+            return _context.Limits.ToList();
+        }
+
+        public Limit GetById(int id)
+        {
+            return _context.Limits.Find(id);
+        }
+
+        public void Add(Limit entity)
+        {
+            _context.Limits.Add(entity);
+            _context.SaveChanges();
+        }
+
+        public void Update(Limit entity)
+        {
+            _context.Entry(entity).State = System.Data.Entity.EntityState.Modified;
+            _context.SaveChanges();
+        }
+
+        public void Delete(int id)
+        {
+            var limit = _context.Limits.Find(id);
+            if (limit != null)
+            {
+                _context.Limits.Remove(limit);
+                _context.SaveChanges();
+            }
+        }
+    }
+}
+     
+Контролери
+     UsersController.cs:
+using System.Linq;
+using System.Net;
+using System.Web.Http;
+using AquaTrack.Data.Models;
+using AquaTrack.Services;
+
+namespace AquaTrack.Controllers
+{
+    [RoutePrefix("api/users")]
+    public class UsersController : ApiController
+    {
+        private readonly UserService _service;
+
+        public UsersController(UserService service)
+        {
+            _service = service;
+        }
+
+        [HttpPost]
+        [Route("register")]
+        public IHttpActionResult Register(User user)
+        {
+            _service.RegisterUser(user);
+            return Ok(user);
+        }
+
+        [HttpPost]
+        [Route("login")]
+        public IHttpActionResult Login(string email, string passwordHash)
+        {
+            var user = _service.Authenticate(email, passwordHash);
+            if (user == null) return Unauthorized();
+
+            return Ok(user);
+        }
+
+        [HttpPut]
+        [Route("update-profile")]
+        public IHttpActionResult UpdateProfile(User updatedUser)
+        {
+            var user = _service.GetUserById(updatedUser.UserId);
+            if (user == null) return NotFound();
+
+            updatedUser.UserId = user.UserId;
+            _service.UpdateUser(updatedUser);
+            return Ok(updatedUser);
+        }
+
+        [HttpGet]
+        [Route("list")]
+        public IHttpActionResult GetUsers()
+        {
+            // Симуляція перевірки ролі
+            var currentUserRole = "Admin"; // Замінити на реальну перевірку ролі
+
+            if (currentUserRole != "Admin")
+            {
+                return Content(HttpStatusCode.Forbidden, "Доступ дозволений тільки адміністраторам.");
+            }
+
+            var users = _service.GetAllUsers();
+            return Ok(users);
+        }
+    }
+}
+
+     
+     IoTDevicesController.cs:
+using System.Web.Http;
+using AquaTrack.Data.Models;
+using AquaTrack.Services;
+
+namespace AquaTrack.Controllers
+{
+    [RoutePrefix("api/iot-devices")]
+    public class IoTDevicesController : ApiController
+    {
+        private readonly IoTDeviceService _service;
+
+        public IoTDevicesController(IoTDeviceService service)
+        {
+            _service = service;
+        }
+
+        [HttpGet]
+        [Route("list")]
+        public IHttpActionResult GetDevices()
+        {
+            var devices = _service.GetAllDevices();
+            return Ok(devices);
+        }
+
+        [HttpPost]
+        [Route("register")]
+        public IHttpActionResult RegisterDevice(IoTDevice device)
+        {
+            _service.AddDevice(device);
+            return Ok(device);
+        }
+
+        [HttpDelete]
+        [Route("delete/{deviceId}")]
+        public IHttpActionResult DeleteDevice(int deviceId)
+        {
+            var device = _service.GetDeviceById(deviceId);
+            if (device == null) return NotFound();
+
+            _service.DeleteDevice(deviceId);
+            return Ok();
+        }
+    }
+}
+
+     
+     WaterUsageController.cs:
+using System.Web.Http;
+using AquaTrack.Services;
+
+namespace AquaTrack.Controllers
+{
+    [RoutePrefix("api/water-usage")]
+    public class WaterUsageController : ApiController
+    {
+        private readonly WaterUsageService _service;
+
+        public WaterUsageController(WaterUsageService service)
+        {
+            _service = service;
+        }
+
+        [HttpGet]
+        [Route("current")]
+        public IHttpActionResult GetCurrentUsage()
+        {
+            var currentUsage = _service.GetCurrentUsage();
+            return Ok(currentUsage);
+        }
+
+        [HttpGet]
+        [Route("history")]
+        public IHttpActionResult GetHistory()
+        {
+            var history = _service.GetUsageHistory();
+            return Ok(history);
+        }
+    }
+}
+
+     
+     LimitsController.cs:
+using System.Web.Http;
+using AquaTrack.Data.Models;
+using AquaTrack.Services;
+
+namespace AquaTrack.Controllers
+{
+    [RoutePrefix("api/limits")]
+    public class LimitsController : ApiController
+    {
+        private readonly LimitService _service;
+
+        public LimitsController(LimitService service)
+        {
+            _service = service;
+        }
+
+        [HttpPost]
+        [Route("create")]
+        public IHttpActionResult CreateLimit(Limit limit)
+        {
+            _service.CreateLimit(limit);
+            return Ok(limit);
+        }
+
+        [HttpPut]
+        [Route("update/{limitId}")]
+        public IHttpActionResult UpdateLimit(int limitId, Limit updatedLimit)
+        {
+            var limit = _service.GetLimitById(limitId);
+            if (limit == null) return NotFound();
+
+            updatedLimit.LimitId = limitId;
+            _service.UpdateLimit(updatedLimit);
+            return Ok(updatedLimit);
+        }
+
+        [HttpDelete]
+        [Route("delete/{limitId}")]
+        public IHttpActionResult DeleteLimit(int limitId)
+        {
+            var limit = _service.GetLimitById(limitId);
+            if (limit == null) return NotFound();
+
+            _service.DeleteLimit(limitId);
+            return Ok();
+        }
+    }
+}
